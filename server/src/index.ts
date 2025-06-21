@@ -28,6 +28,27 @@ import { logGeneral, logServer, logsDir } from './logger.js';
 import { launchMCPServer } from './processLauncher.js';
 import { Readable } from 'stream';
 
+class LineDecoder {
+  private buffer = "";
+  public onmessage: (message: any) => void = () => {};
+
+  public push(chunk: string) {
+    this.buffer += chunk;
+    const lines = this.buffer.split('\n');
+    this.buffer = lines.pop() || ""; // The last part is either an incomplete line or an empty string
+    for (const line of lines) {
+      if (line.trim() === "") {
+        continue;
+      }
+      try {
+        this.onmessage(JSON.parse(line));
+      } catch (e) {
+        console.error("Error parsing JSON message from stdio:", e);
+      }
+    }
+  }
+}
+
 const SSE_HEADERS_PASSTHROUGH = ["authorization"];
 const STREAMABLE_HTTP_HEADERS_PASSTHROUGH = [
   "authorization",
@@ -64,24 +85,7 @@ const createTransport = async (req: express.Request): Promise<Transport> => {
 
   const transportType = query.transportType as string;
 
-  if (transportType === "stdio") {
-    const command = query.command as string;
-    const origArgs = shellParseArgs(query.args as string) as string[];
-    const queryEnv = query.env ? JSON.parse(query.env as string) : {};
-    const env = { ...process.env, ...defaultEnvironment, ...queryEnv };
-
-    const { cmd, args } = findActualExecutable(command, origArgs);
-
-    console.log(`🚀 Stdio transport: command=${cmd}, args=${args}`);
-
-    const transport = new StdioClientTransport({
-      command: cmd,
-      args,
-      env,
-    });
-    await transport.start();
-    return transport;
-  } else if (transportType === "sse") {
+  if (transportType === "sse") {
     const url = query.url as string;
     const headers: HeadersInit = {
       Accept: "text/event-stream",
@@ -243,7 +247,59 @@ app.get("/stdio", async (req, res) => {
     webAppTransports.set(sessionId, webAppTransport);
 
     try {
-      const backingServerTransport = await createTransport(req);
+      const query = req.query;
+      const command = query.command as string;
+      const origArgs = shellParseArgs(query.args as string) as string[];
+      const queryEnv = query.env ? JSON.parse(query.env as string) : {};
+      const env = { ...process.env, ...defaultEnvironment, ...queryEnv };
+      const serverName = (query.serverName as string) || "unknown-stdio-server";
+
+      const { cmd, args } = findActualExecutable(command, origArgs);
+
+      logServer(
+        serverName,
+        `🚀 Stdio transport: command=${cmd}, args=${args.join(" ")}`,
+      );
+
+      const child = launchMCPServer(cmd, args, env, serverName);
+
+      const backingServerTransport: Transport = {
+        send: async () => {
+          // This transport only listens, it doesn't send.
+          // The `launchMCPServer` is configured with stdin: 'ignore'.
+        },
+        close: async () => {
+          child.kill();
+        },
+        onmessage: () => {},
+        onclose: () => {},
+        onerror: () => {},
+        start: async () => {},
+      };
+
+      const lineDecoder = new LineDecoder();
+      lineDecoder.onmessage = (message) => {
+        if (backingServerTransport.onmessage) {
+          backingServerTransport.onmessage(message);
+        }
+      };
+
+      child.stdout.on("data", (data) => {
+        lineDecoder.push(data.toString());
+      });
+
+      child.on("exit", (code, signal) => {
+        if (backingServerTransport.onclose) {
+          backingServerTransport.onclose();
+        }
+      });
+
+      child.on("error", (err) => {
+        if (backingServerTransport.onerror) {
+          backingServerTransport.onerror(err);
+        }
+      });
+
       backingServerTransports.set(sessionId, backingServerTransport);
 
       webAppTransport.onclose = () => {
@@ -254,43 +310,27 @@ app.get("/stdio", async (req, res) => {
       };
 
       await webAppTransport.start();
-
-      (backingServerTransport as StdioClientTransport).stderr!.on(
-        "data",
-        (chunk) => {
-          webAppTransport.send({
-            jsonrpc: "2.0",
-            method: "notifications/stderr",
-            params: {
-              content: chunk.toString(),
-            },
-          });
-        },
-      );
+      console.log(`✨ Created web app transport for session ${sessionId}`);
 
       mcpProxy({
         transportToClient: webAppTransport,
         transportToServer: backingServerTransport,
       });
-
-      console.log(
-        `✨ Connected MCP client to backing server transport for session ${sessionId}`,
-      );
     } catch (error) {
-      if (error instanceof SseError && error.code === 401) {
-        console.error(
-          "🔒 Received 401 Unauthorized from MCP server:",
-          error.message,
-        );
-        res.status(401).json(error);
-        return;
-      }
-
-      throw error;
+      console.error("❌ Error in /stdio route:", error);
+      const sseError = error as SseError;
+      const errorNotification = {
+        jsonrpc: '2.0' as const,
+        method: 'transport/error',
+        params: {
+            code: sseError.code || 500,
+            message: sseError.message || 'Unknown error',
+        }
+      };
+      webAppTransport.send(errorNotification);
     }
   } catch (error) {
-    console.error("❌ Error in /stdio route (custom proxy):", error);
-    res.status(500).json(error);
+    console.error("❌ Error setting up SSE transport:", error);
   }
 });
 
