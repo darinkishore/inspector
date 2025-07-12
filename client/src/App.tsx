@@ -573,7 +573,6 @@ const App = () => {
           {/* History Panel */}
           <HistoryAndNotifications
             requestHistory={requestHistory}
-            toolResult={mcpOperations.toolResult}
             clientLogs={mcpOperations.getClientLogs()}
             onClearHistory={mcpOperations.clearRequestHistory}
             onClearLogs={mcpOperations.clearClientLogs}

@@ -1,27 +1,23 @@
-import { CompatibilityCallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { useEffect, useState, useCallback } from "react";
 import { ChevronDown, GripHorizontal } from "lucide-react";
 import { useDraggablePane } from "../lib/hooks/useDraggablePane";
 import TabbedHistoryPanel from "./TabbedHistoryPanel";
 import { ClientLogInfo, RequestHistoryInfo } from "@/hooks/helpers/types";
 
-export type TabType = "activity" | "results" | "logs";
+export type TabType = "activity" | "logs";
 
 const TAB_CONFIG: { key: TabType; label: string }[] = [
   { key: "activity", label: "History" },
-  { key: "results", label: "Results" },
   { key: "logs", label: "Logs" },
 ];
 
 const HistoryAndNotifications = ({
   requestHistory,
-  toolResult,
   clientLogs,
   onClearHistory,
   onClearLogs,
 }: {
   requestHistory: RequestHistoryInfo[];
-  toolResult: CompatibilityCallToolResult | null;
   clientLogs: ClientLogInfo[];
   onClearHistory: () => void;
   onClearLogs: () => void;
@@ -48,13 +44,7 @@ const HistoryAndNotifications = ({
     /* … */
   }, [isCollapsed, height, setCustomHeight, resetHeight]);
 
-  // Auto‑expand on new result
-  useEffect(() => {
-    if (toolResult) {
-      setActiveTab("results");
-      setIsCollapsed(false);
-    }
-  }, [toolResult]);
+  // Auto‑expand on new result - removed since results are now shown in Tools tab
 
   // Auto‑expand on error log
   useEffect(() => {
@@ -87,7 +77,6 @@ const HistoryAndNotifications = ({
   // Counts for display
   const counts = {
     activity: requestHistory.length,
-    results: toolResult ? 1 : 0,
     logs: clientLogs.length,
   };
 
@@ -150,7 +139,6 @@ const HistoryAndNotifications = ({
         /* Expanded: full panel */
         <TabbedHistoryPanel
           requestHistory={requestHistory}
-          toolResult={toolResult}
           clientLogs={clientLogs}
           onClearHistory={onClearHistory}
           onClearLogs={onClearLogs}
