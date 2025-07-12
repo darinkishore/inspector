@@ -603,7 +603,9 @@ const ToolRunDialog = ({
           <DialogHeader>
             <DialogTitle>
               {tool ? (
-                <span className="font-mono text-sm bg-gradient-to-r from-slate-100 to-gray-100 dark:from-slate-800 dark:to-gray-800 px-2.5 py-1 rounded-md border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 font-medium shadow-sm">{tool.name}</span>
+                <span className="font-mono text-sm bg-gradient-to-r from-slate-100 to-gray-100 dark:from-slate-800 dark:to-gray-800 px-2.5 py-1 rounded-md border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 font-medium shadow-sm">
+                  {tool.name}
+                </span>
               ) : (
                 "Run Tool"
               )}
