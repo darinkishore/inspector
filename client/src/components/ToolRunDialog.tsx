@@ -601,7 +601,13 @@ const ToolRunDialog = ({
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>{tool ? `Run ${tool.name}` : "Run Tool"}</DialogTitle>
+            <DialogTitle>
+              {tool ? (
+                <span className="font-mono text-sm bg-gradient-to-r from-slate-100 to-gray-100 dark:from-slate-800 dark:to-gray-800 px-2.5 py-1 rounded-md border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 font-medium shadow-sm">{tool.name}</span>
+              ) : (
+                "Run Tool"
+              )}
+            </DialogTitle>
             <ToolDescription tool={tool} />
           </DialogHeader>
 

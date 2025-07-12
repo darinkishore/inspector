@@ -48,7 +48,7 @@ const ToolResultsPanel = ({
               No results yet
             </p>
             <p className="text-muted-foreground/60 text-sm">
-              Tool execution results will appear here after running a tool
+              Tool results will appear here after running a tool
             </p>
           </div>
         ) : (
