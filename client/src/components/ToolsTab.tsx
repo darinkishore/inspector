@@ -6,7 +6,8 @@ import {
 import { useEffect, useState } from "react";
 import ListPane from "./ListPane";
 import { ConnectionStatus } from "@/lib/types/constants";
-import ToolRunCard from "./ToolRunCard";
+import ToolRunDialog from "./ToolRunDialog";
+import ToolResultsPanel from "./ToolResultsPanel";
 import { McpJamRequest } from "@/lib/types/requestTypes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ const ToolsTab = ({
   callTool,
   selectedTool,
   setSelectedTool,
+  toolResult,
   nextCursor,
   connectionStatus,
   selectedServerName,
@@ -61,6 +63,8 @@ const ToolsTab = ({
   const [loadedRequest, setLoadedRequest] = useState<McpJamRequest | null>(
     null,
   );
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogTool, setDialogTool] = useState<Tool | null>(null);
 
   // Load saved requests on component mount and filter by current client
   useEffect(() => {
@@ -113,12 +117,13 @@ const ToolsTab = ({
     // Find and select the matching tool
     const matchingTool = tools.find((tool) => tool.name === request.toolName);
     if (matchingTool) {
-      setSelectedTool(matchingTool);
+      setDialogTool(matchingTool);
+      // Set the loaded request for ToolRunDialog
+      setLoadedRequest(request);
+      setIsDialogOpen(true);
+      // Clear the loaded request after a short delay to allow the component to process it
+      setTimeout(() => setLoadedRequest(null), 100);
     }
-    // Set the loaded request for ToolRunCard
-    setLoadedRequest(request);
-    // Clear the loaded request after a short delay to allow the component to process it
-    setTimeout(() => setLoadedRequest(null), 100);
   };
 
   const handleRenameRequest = (requestId: string, currentName: string) => {
@@ -312,6 +317,11 @@ const ToolsTab = ({
     );
   };
 
+  const handleToolClick = (tool: Tool) => {
+    setDialogTool(tool);
+    setIsDialogOpen(true);
+  };
+
   return (
     <div className="grid grid-cols-[2fr_3fr_3fr] gap-4 h-full">
       {/* Saved Requests Section */}
@@ -324,7 +334,7 @@ const ToolsTab = ({
           clearTools();
           setSelectedTool(null);
         }}
-        setSelectedItem={setSelectedTool}
+        setSelectedItem={handleToolClick}
         renderItem={(tool) => {
           const parameters = tool.inputSchema.properties
             ? Object.keys(tool.inputSchema.properties)
@@ -366,9 +376,20 @@ const ToolsTab = ({
         buttonText="Load Tools"
       />
 
-      {/* Tool Runner */}
-      <ToolRunCard
-        selectedTool={selectedTool}
+      {/* Tool Results Panel */}
+      <ToolResultsPanel
+        toolResult={toolResult}
+        selectedTool={selectedTool?.name || null}
+      />
+
+      {/* Tool Run Dialog */}
+      <ToolRunDialog
+        isOpen={isDialogOpen}
+        tool={dialogTool}
+        onClose={() => {
+          setIsDialogOpen(false);
+          setDialogTool(null);
+        }}
         callTool={callTool}
         loadedRequest={loadedRequest}
         selectedServerName={selectedServerName}
