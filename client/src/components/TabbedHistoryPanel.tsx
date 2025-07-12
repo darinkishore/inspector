@@ -1,11 +1,5 @@
 import { useEffect } from "react";
-import {
-  Activity,
-  ChevronDown,
-  Bug,
-  Trash2,
-  Copy,
-} from "lucide-react";
+import { Activity, ChevronDown, Bug, Trash2, Copy } from "lucide-react";
 import ActivityTab from "./ActivityTab";
 import ClientLogsTab from "./ClientLogsTab";
 import { ClientLogInfo, RequestHistoryInfo } from "@/hooks/helpers/types";
@@ -96,8 +90,6 @@ const TabbedHistoryPanel = ({
       </button>
     );
   };
-
-
 
   const renderLogsTabButton = () => {
     return (

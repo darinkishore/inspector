@@ -27,8 +27,6 @@ import {
 } from "@/lib/types/requestTypes";
 import { tryParseJson } from "@/lib/utils/json/jsonUtils";
 
-
-
 const INPUT_STYLES = {
   base: "font-mono text-xs bg-gradient-to-br from-background/80 to-background/60 border-border/40 rounded-lg focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-200",
   container:
@@ -63,13 +61,10 @@ const handleNumberInput = (
   }
 };
 
-const ToolDescription = ({ tool }: { tool: Tool | null }) => (
+const ToolDescription = ({ tool }: { tool: Tool | null }) =>
   tool?.description && (
-    <p className="text-sm text-muted-foreground">
-      {tool.description}
-    </p>
-  )
-);
+    <p className="text-sm text-muted-foreground">{tool.description}</p>
+  );
 
 interface ParameterInputProps {
   paramKey: string;
@@ -354,10 +349,7 @@ const ActionButtons = ({
       {isUpdating ? "Update Request" : "Save Request"}
     </Button>
 
-    <Button
-      onClick={onRun}
-      disabled={isRunning}
-    >
+    <Button onClick={onRun} disabled={isRunning}>
       {isRunning ? (
         <>
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -432,16 +424,10 @@ const SaveDialog = ({
         </div>
 
         <DialogFooter>
-          <Button
-            onClick={onClose}
-            variant="outline"
-          >
+          <Button onClick={onClose} variant="outline">
             Cancel
           </Button>
-          <Button
-            onClick={onSave}
-            disabled={isSaving}
-          >
+          <Button onClick={onSave} disabled={isSaving}>
             {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -494,11 +480,7 @@ const ToolRunDialog = ({
   }, [tool?.name]);
 
   useEffect(() => {
-    if (
-      loadedRequest &&
-      tool &&
-      loadedRequest.toolName === tool.name
-    ) {
+    if (loadedRequest && tool && loadedRequest.toolName === tool.name) {
       setParams(loadedRequest.parameters);
       setParamsInitialized(true);
       setCurrentRequestId(loadedRequest.id);
@@ -572,7 +554,7 @@ const ToolRunDialog = ({
       setSaveRequestName("");
       setSaveRequestDescription("");
       window.dispatchEvent(new CustomEvent("requestSaved"));
-      
+
       // Auto-dismiss dialog after successful save
       onClose();
     } catch (error) {
@@ -591,10 +573,7 @@ const ToolRunDialog = ({
       setSaveRequestDescription(loadedRequest.description || "");
     } else {
       setSaveRequestName(
-        generateDefaultRequestName(
-          tool,
-          params as Record<string, JsonValue>,
-        ),
+        generateDefaultRequestName(tool, params as Record<string, JsonValue>),
       );
       setSaveRequestDescription("");
     }
@@ -607,7 +586,7 @@ const ToolRunDialog = ({
     try {
       setIsToolRunning(true);
       await callTool(tool.name, params);
-      
+
       // Auto-dismiss modal after successful tool execution
       onClose();
     } finally {
@@ -622,9 +601,7 @@ const ToolRunDialog = ({
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>
-              {tool ? `Run ${tool.name}` : "Run Tool"}
-            </DialogTitle>
+            <DialogTitle>{tool ? `Run ${tool.name}` : "Run Tool"}</DialogTitle>
             <ToolDescription tool={tool} />
           </DialogHeader>
 
@@ -668,4 +645,4 @@ const ToolRunDialog = ({
   );
 };
 
-export default ToolRunDialog; 
+export default ToolRunDialog;

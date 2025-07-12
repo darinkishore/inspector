@@ -7,7 +7,10 @@ interface ToolResultsPanelProps {
   selectedTool: string | null;
 }
 
-const ToolResultsPanel = ({ toolResult, selectedTool }: ToolResultsPanelProps) => {
+const ToolResultsPanel = ({
+  toolResult,
+  selectedTool,
+}: ToolResultsPanelProps) => {
   const renderStatusIndicator = () => {
     if (toolResult && !toolResult.isError) {
       return <div className="w-2 h-2 bg-green-500 rounded-full"></div>;
@@ -24,9 +27,7 @@ const ToolResultsPanel = ({ toolResult, selectedTool }: ToolResultsPanelProps) =
       <div className="p-3 border-b border-border/50 bg-muted/30">
         <div className="flex items-center space-x-2">
           <ScrollText className="w-4 h-4 text-muted-foreground" />
-          <h3 className="text-sm font-medium text-foreground">
-            Tool Results
-          </h3>
+          <h3 className="text-sm font-medium text-foreground">Tool Results</h3>
           {selectedTool && (
             <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
               {selectedTool}
@@ -60,4 +61,4 @@ const ToolResultsPanel = ({ toolResult, selectedTool }: ToolResultsPanelProps) =
   );
 };
 
-export default ToolResultsPanel; 
+export default ToolResultsPanel;
