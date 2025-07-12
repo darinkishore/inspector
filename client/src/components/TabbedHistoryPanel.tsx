@@ -1,15 +1,12 @@
-import { CompatibilityCallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   Activity,
-  ScrollText,
   ChevronDown,
   Bug,
   Trash2,
   Copy,
 } from "lucide-react";
 import ActivityTab from "./ActivityTab";
-import ResultsTab from "./ResultsTab";
 import ClientLogsTab from "./ClientLogsTab";
 import { ClientLogInfo, RequestHistoryInfo } from "@/hooks/helpers/types";
 import { TabType } from "./History";
@@ -17,7 +14,6 @@ import { useToast } from "@/lib/hooks/useToast";
 
 interface TabbedHistoryPanelProps {
   requestHistory: RequestHistoryInfo[];
-  toolResult: CompatibilityCallToolResult | null;
   clientLogs: ClientLogInfo[];
   onClearHistory: () => void;
   onClearLogs: () => void;
@@ -28,7 +24,6 @@ interface TabbedHistoryPanelProps {
 
 const TabbedHistoryPanel = ({
   requestHistory,
-  toolResult,
   clientLogs,
   onClearHistory,
   onClearLogs,
@@ -36,14 +31,7 @@ const TabbedHistoryPanel = ({
   activeTab,
   setActiveTab,
 }: TabbedHistoryPanelProps) => {
-  const [isToolResultError, setIsToolResultError] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (toolResult) {
-      setIsToolResultError(toolResult.isError === true);
-    }
-  }, [toolResult]);
 
   const handleCopyLogs = async () => {
     if (clientLogs.length === 0) return;
@@ -109,32 +97,7 @@ const TabbedHistoryPanel = ({
     );
   };
 
-  const renderResultsTabButton = () => {
-    const renderCircleIndicator = () => {
-      if (toolResult && !isToolResultError) {
-        return <div className="w-2 h-2 bg-green-500 rounded-full"></div>;
-      } else if (toolResult && isToolResultError) {
-        return <div className="w-2 h-2 bg-red-500 rounded-full"></div>;
-      } else {
-        return null;
-      }
-    };
-    return (
-      <button
-        key="results"
-        onClick={() => setActiveTab("results")}
-        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-          activeTab === "results"
-            ? "bg-primary/10 text-primary border border-primary/20"
-            : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-        }`}
-      >
-        <ScrollText className="w-4 h-4" />
-        <span className="text-sm font-medium">Results</span>
-        {renderCircleIndicator()}
-      </button>
-    );
-  };
+
 
   const renderLogsTabButton = () => {
     return (
@@ -168,12 +131,6 @@ const TabbedHistoryPanel = ({
               onClearHistory={onClearHistory}
               showHeader={false}
             />
-          </div>
-        );
-      case "results":
-        return (
-          <div className="h-full overflow-y-auto p-6">
-            <ResultsTab toolResult={toolResult} showHeader={false} />
           </div>
         );
       case "logs":
@@ -235,7 +192,6 @@ const TabbedHistoryPanel = ({
       <div className="flex items-center justify-between border-b border-border/20 px-6 py-3">
         <div className="flex space-x-1">
           {renderActivityTabButton()}
-          {renderResultsTabButton()}
           {renderLogsTabButton()}
         </div>
         <div className="flex items-center">
