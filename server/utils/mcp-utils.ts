@@ -39,9 +39,8 @@ export function validateServerConfig(serverConfig: any): ValidationResult {
     try {
       // Convert string URL to URL object if needed and strip query/hash
       if (typeof config.url === "string") {
+        // Preserve query params and hash; some MCP URLs (e.g., mcp.run, registries) require them
         const parsed = new URL(config.url);
-        parsed.search = "";
-        parsed.hash = "";
         config.url = parsed;
       } else if (typeof config.url === "object" && !config.url.href) {
         return {
