@@ -29,6 +29,9 @@ mcp-chat-client/node_modules/
 .DS_Store
 *.pem
 
+# bun lockfiles
+bun.lockb
+
 # debug
 npm-debug.log*
 yarn-debug.log*
