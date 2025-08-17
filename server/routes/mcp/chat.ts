@@ -196,90 +196,13 @@ chat.post("/", async (c) => {
       }
     }
 
-    // Wrap tools to capture tool calls and results when statically resolved
-    const tools = await client.getTools();
-    const originalTools = tools && Object.keys(tools).length > 0 ? tools : {};
-    const wrappedTools: Record<string, any> = {};
-
-    for (const [name, tool] of Object.entries(originalTools)) {
-      wrappedTools[name] = {
-        ...(tool as any),
-        execute: async (params: any) => {
-          const currentToolCallId = ++toolCallId;
-          const startedAt = Date.now();
-
-          // Stream tool call event immediately
-          if (streamController && encoder) {
-            streamController.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({
-                  type: "tool_call",
-                  toolCall: {
-                    id: currentToolCallId,
-                    name,
-                    parameters: params,
-                    timestamp: new Date(),
-                    status: "executing",
-                  },
-                })}\n\n`,
-              ),
-            );
-          }
-          dbg("Tool executing", { name, currentToolCallId, params });
-
-          try {
-            const result = await (tool as any).execute(params);
-            dbg("Tool result", { name, currentToolCallId, ms: Date.now() - startedAt });
-
-            // Stream tool result event immediately
-            if (streamController && encoder) {
-              streamController.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({
-                    type: "tool_result",
-                    toolResult: {
-                      id: currentToolCallId,
-                      toolCallId: currentToolCallId,
-                      result,
-                      timestamp: new Date(),
-                    },
-                  })}\n\n`,
-                ),
-              );
-            }
-
-            return result;
-          } catch (error) {
-            dbg("Tool error", { name, currentToolCallId, error: error instanceof Error ? error.message : String(error) });
-            // Stream tool error event immediately
-            if (streamController && encoder) {
-              streamController.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({
-                    type: "tool_result",
-                    toolResult: {
-                      id: currentToolCallId,
-                      toolCallId: currentToolCallId,
-                      error:
-                        error instanceof Error ? error.message : String(error),
-                      timestamp: new Date(),
-                    },
-                  })}\n\n`,
-                ),
-              );
-            }
-            throw error;
-          }
-        },
-      };
-    }
-
+    // Create agent; rely on dynamic toolsets for MCP tools (no static tools passed)
     const agent = new Agent({
       name: "MCP Chat Agent",
       instructions:
         systemPrompt || "You are a helpful assistant with access to MCP tools.",
       model: llmModel,
-      tools: Object.keys(wrappedTools).length > 0 ? wrappedTools : undefined,
+      // Do not pass static tools here to avoid duplicate tool events when using toolsets
     });
 
     const formattedMessages = messages.map((msg: ChatMessage) => ({
@@ -299,15 +222,7 @@ chat.post("/", async (c) => {
       toolsets,
       onStepFinish: ({ text, toolCalls, toolResults }) => {
         try {
-          if (text && streamController && encoder) {
-            streamedAnyText = true;
-            streamController.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({ type: "text", content: text })}\n\n`,
-              ),
-            );
-          }
-
+          // Do not enqueue text here; text is streamed exclusively via textStream below
           const tcList = toolCalls as any[] | undefined;
           if (tcList && Array.isArray(tcList)) {
             for (const call of tcList) {
@@ -362,14 +277,7 @@ chat.post("/", async (c) => {
       onFinish: ({ text, finishReason }) => {
         dbg("onFinish called", { finishReason, hasText: Boolean(text) });
         try {
-          if (text && streamController && encoder) {
-            streamedAnyText = true;
-            streamController.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({ type: "text", content: text })}\n\n`,
-              ),
-            );
-          }
+          // Do not enqueue text here; handled by textStream iteration
         } catch (err) {
           dbg("onFinish enqueue error", err);
         }
